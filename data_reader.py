@@ -68,7 +68,7 @@ class ATISReader(object):
 				for i in range(info.num_events):
 					data = self.file.read(EVENT_LENGTH)
 					# Wait a bit (don't get the very first image captured by the sensor)
-					if info.packet_type == 4 and info.time_start > 40:
+					if info.packet_type == 4 and info.time_start > 20:
 						# It is a frame event
 						e = Event._make(struct.unpack('BBHHH', data))
 						image_out[e.y,e.x] = e.subtype

@@ -8,6 +8,10 @@ import argparse
 import cv2
 import numpy as np
 import data_reader
+import os
+import subprocess
+import time
+import rospkg
 
 # Davis values
 RESX = 240
@@ -37,8 +41,6 @@ class Selector(object):
 				break
 
 	def click_and_crop(self, event, x, y, flags, param):
-		# grab references to the global variables
-	 
 		# if the left mouse button was clicked, record the starting
 		# (x, y) coordinates and indicate that cropping is being
 		# performed
@@ -95,22 +97,42 @@ class Selector(object):
 	def WriteMask(self, filename = "roimask.bin"):
 		self.image_out.tofile(filename)
 
+
+def RecordDavis():
+	# Run the davis and record to the PWD, so we can open the file and select ROI
+	davis_command = "rosrun nm_epf epf -davis240C 16 -enableAPS -D_TD -write " + os.getcwd() + "/davisframe"
+	print davis_command
+	davis_process = subprocess.Popen("exec " + davis_command, shell=True)
+	time.sleep(2)
+	davis_process.terminate()
+	# Now we have the file with the images
+
 if __name__ == '__main__':
 	# Parse the input arguments of input and output files
+	input_file = "davisframe/0.bin"
+	output_file = "roimask.bin"
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-i", "--input", required=False, help="Binary file containing scene image")
+	ap.add_argument("-a", "--auto", required=False, help="Runs in automatic mode. Records the scene from the DAVIS with S/N 16", action="store_true")
 	ap.add_argument("-o", "--output", required=False, help="Output file containing the ROI mask")
 	args = vars(ap.parse_args())
-	if not args['input']:
-		print "No input specified, will use the default file path data/davisframe.bin"
-		dr = data_reader.ATISReader("data/davisframe.bin")
+	if args['auto']:
+		# We are running in automatic mode
+		RecordDavis()
+		# Get the path of the EPF so we can save the roimask there
+		rospack = rospkg.RosPack()
+		output_file = rospack.get_path("nm_epf") + "/roimask.bin"
+		print output_file
 	else:
-		dr = data_reader.ATISReader(args['input'])
-	if not args['output']:
-		print "No output specified, will use the default file path roiframe.bin"
-		filename = "roimask.bin"
-	else:
-		filename = args['output']
+		if not args['input']:
+			print("No input specified, will use the default file path ", input_file)
+		else:
+			input_file = args['input']
+		if not args['output']:
+			print("No output specified, will use the default file path roiframe.bin")
+		else:
+			output_file = args['output']
+	dr = data_reader.ATISReader(input_file)
 	image = dr.ReadImage()
 	# Stretch the grayscale to make it easier to visualize
 	scaling_factor = 255 / np.amax(image)
@@ -118,4 +140,4 @@ if __name__ == '__main__':
 
 	sel = Selector(image)
 	# Save the mask to be imported into the epf
-	sel.WriteMask(filename)
+	sel.WriteMask(output_file)
