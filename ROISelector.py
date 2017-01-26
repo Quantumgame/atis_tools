@@ -109,7 +109,7 @@ def RecordDavis():
 
 if __name__ == '__main__':
 	# Parse the input arguments of input and output files
-	input_file = "davisframe/0.bin"
+	input_file = "davisframe.bin"
 	output_file = "roimask.bin"
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-i", "--input", required=False, help="Binary file containing scene image")
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 		else:
 			input_file = args['input']
 		if not args['output']:
-			print("No output specified, will use the default file path roiframe.bin")
+			print("No output specified, will use the default file path roimask.bin")
 		else:
 			output_file = args['output']
 	dr = data_reader.ATISReader(input_file)
